@@ -58,7 +58,10 @@ class Upsample(nn.Upsample):
         """
         Fix bfloat16 support for nearest neighbor interpolation.
         """
-        return super().forward(x.float()).type_as(x)
+        if x.device.type == "musa":
+            return super().forward(x.float().cpu()).type_as(x).to(x.device)
+        else:
+            return super().forward(x.float()).type_as(x)
 
 
 class Resample(nn.Module):

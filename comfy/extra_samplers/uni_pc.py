@@ -640,7 +640,10 @@ class UniPC:
                 if order == 2:
                     rhos_p = torch.tensor([0.5], device=b.device)
                 else:
-                    rhos_p = torch.linalg.solve(R[:-1, :-1], b[:-1])
+                    if x.device.type == "musa":
+                        rhos_p = torch.linalg.solve(R[:-1, :-1].cpu(), b[:-1].cpu()).to(b.device)
+                    else:
+                        rhos_p = torch.linalg.solve(R[:-1, :-1], b[:-1])
         else:
             D1s = None
 
@@ -650,7 +653,10 @@ class UniPC:
             if order == 1:
                 rhos_c = torch.tensor([0.5], device=b.device)
             else:
-                rhos_c = torch.linalg.solve(R, b)
+                if x.device.type == "musa":
+                    rhos_c = torch.linalg.solve(R.cpu(), b.cpu()).to(b.device)
+                else:
+                    rhos_c = torch.linalg.solve(R, b)
 
         model_t = None
         if self.predict_x0:
