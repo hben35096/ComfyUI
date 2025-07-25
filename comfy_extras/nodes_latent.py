@@ -1,6 +1,7 @@
 import comfy.utils
 import comfy_extras.nodes_post_processing
 import torch
+import comfy.model_management as mm
 
 
 def reshape_latent_to(target_shape, latent, repeat_batch=True):
@@ -212,8 +213,13 @@ class LatentOperationTonemapReinhard:
             latent_vector_magnitude = (torch.linalg.vector_norm(latent, dim=(1)) + 0.0000000001)[:,None]
             normalized_latent = latent / latent_vector_magnitude
 
-            mean = torch.mean(latent_vector_magnitude, dim=(1,2,3), keepdim=True)
-            std = torch.std(latent_vector_magnitude, dim=(1,2,3), keepdim=True)
+            device = mm.get_torch_device()
+            if device.type == "musa":
+                mean = latent_vector_magnitude.mean(dim=(1, 2, 3), keepdim=True)
+                std = ((latent_vector_magnitude - mean) ** 2).mean(dim=(1, 2, 3), keepdim=True).sqrt()
+            else:
+                mean = torch.mean(latent_vector_magnitude, dim=(1,2,3), keepdim=True)
+                std = torch.std(latent_vector_magnitude, dim=(1,2,3), keepdim=True)
 
             top = (std * 5 + mean) * multiplier
 
